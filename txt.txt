@@ -16,3 +16,11 @@
 "author":1,
 "text":"the what so ever"
 }
+
+
+{
+"sender":3,
+"receiver":12,
+"roomid":"312",
+"body":"this is worring"
+}

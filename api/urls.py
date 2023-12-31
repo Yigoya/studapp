@@ -21,5 +21,17 @@ urlpatterns = [
     path('listquestioncomment/',views.ListQuestionComment.as_view()),
     path('createquestioncomment/',views.CreateQuestionComment.as_view()),
     path('questioncomment/<int:pk>',views.QuestionComments.as_view()),
+    path('matrix',views.MatrixOne.as_view()),
+    path('matrixall',views.MatrixAll.as_view()),
+    path('classroom',views.MatrixAll.as_view()),
+    path('createclassroom',views.CreateClassRoom.as_view()),
+    path('joinclassroom',views.JoinClassRoom.as_view()),
+    path('getclassroom/<int:pk>',views.GetClassRoom.as_view()),
+    path('getmyclassroom/<int:pk>',views.GetMyClassRoom.as_view()),
+    path('postclassroom/<int:pk>',views.PostClassRoom.as_view()),
+    path('message/<str:pk>',views.MessageGet.as_view()),
+    path('mymessage/<int:pk>',views.MyMessage.as_view()),
+    path('group/<int:pk>',views.Group.as_view()),
+    path('friend/<int:pk>',views.MyFriend.as_view()),
     
 ]

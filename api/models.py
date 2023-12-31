@@ -21,13 +21,17 @@ class Student(models.Model):
     avatar = models.ImageField(null=True,upload_to='profile/')
     grade = models.CharField(max_length=20, null=True)
     schoolname = models.TextField(null=True)
-
+    startedchat = models.JSONField(null=True)
+    friends = models.JSONField(null=True)
     def set_password(self,raw_password):
         self.password = make_password(raw_password)
     
     def check_password(self,raw_password):
         return check_password(raw_password,self.password)
-
+class Groups(models.Model):
+    name = models.CharField(max_length=250)
+    member = models.JSONField(null=True)
+    
 class Teacher(models.Model):
     name = models.CharField(max_length=250,null=True)
     email = models.EmailField(unique=True,null=True)
@@ -52,7 +56,7 @@ class EntranceQuestion(models.Model):
     answer = models.CharField(max_length=1)
     explain = models.TextField(null=True)
     year = models.IntegerField()
-    subject = models.TimeField()
+    subject = models.TextField()
     unit = models.IntegerField()
     
 class ClassRoom(models.Model):
@@ -81,3 +85,14 @@ class QuestionComment(models.Model):
     text = models.TextField()
     file = models.FileField(null=True,upload_to='file/')
     image = models.ImageField(null=True,upload_to='image/')
+
+class Message(models.Model):
+    sender = models.IntegerField()
+    receiver = models.IntegerField()
+    roomid=models.CharField(max_length=250)
+    body = models.TextField()
+    updated = models.DateTimeField(auto_now=True)
+    created = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return self.body[0:50] 

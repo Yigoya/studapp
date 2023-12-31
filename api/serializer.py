@@ -39,3 +39,12 @@ class QuestionCommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = QuestionComment
         fields = '__all__'
+class MessageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Message
+        fields = '__all__'
+
+class GroupsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=Groups
+        fields = '__all__'

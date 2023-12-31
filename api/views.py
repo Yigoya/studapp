@@ -9,6 +9,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework.authtoken.models import Token
 from rest_framework import status
 from rest_framework.views import APIView
+from .data import questions
 # Create your views here.
 @api_view(['GET'])
 def getRoute(request):
@@ -72,10 +73,10 @@ class LoginStudent(APIView):
 
 
 class ListStudent(APIView):
-    def get(self,req):
-        student = Student.objects.all()
-        serializer = StudentSerializer(student,many=True)
-        return Response(serializer.data)
+	def get(self,req):
+		student = Student.objects.all()
+		serializer = StudentSerializer(student,many=True)
+		return Response(serializer.data)
 
 class Students(APIView):
 	student = None
@@ -88,13 +89,12 @@ class Students(APIView):
 				"msg":'Student does not exist'
 			})
 	def get(self,req,pk):
+		print(req.GET.get('email'))
 		try:
-			student = Student.objects.get(id=pk)
+			student = Student.objects.get(email=req.GET.get('email'))
 			serializer = StudentSerializer(student,many=False)
 		
-			return 
-
-			(serializer.data)
+			return Response(serializer.data)
 		except:
 			return Response({
 				"msg":'Student does not exist'
@@ -139,10 +139,10 @@ class LoginTeacher(APIView):
 
 
 class ListTeacher(APIView):
-    def get(self,req):
-        teacher = Teacher.objects.all()
-        serializer = TeacherSerializer(teacher,many=True)
-        return Response(serializer.data)
+	def get(self,req):
+		teacher = Teacher.objects.all()
+		serializer = TeacherSerializer(teacher,many=True)
+		return Response(serializer.data)
 
 class Teachers(APIView):
 	def get(self,req,pk):
@@ -185,10 +185,10 @@ class CreateEntranceQuestion(APIView):
 
 
 class ListEntranceQuestion(APIView):
-    def get(self,req):
-        entranceQuestion = EntranceQuestion.objects.all()
-        serializer = EntranceQuestionSerializer(entranceQuestion,many=True)
-        return Response(serializer.data)
+	def get(self,req):
+		entranceQuestion = EntranceQuestion.objects.all()
+		serializer = EntranceQuestionSerializer(entranceQuestion,many=True)
+		return Response(serializer.data)
 
 class EntranceQuestions(APIView):
 	def get(self,req,pk):
@@ -230,10 +230,10 @@ class CreateClassRoomPost(APIView):
 
 
 class ListClassRoomPost(APIView):
-    def get(self,req):
-        classRoomPost = ClassRoomPost.objects.all()
-        serializer = ClassRoomPostSerializer(classRoomPost,many=True)
-        return Response(serializer.data)
+	def get(self,req):
+		classRoomPost = ClassRoomPost.objects.all()
+		serializer = ClassRoomPostSerializer(classRoomPost,many=True)
+		return Response(serializer.data)
 
 class ClassRoomPosts(APIView):
 	def get(self,req,pk):
@@ -270,13 +270,26 @@ class CreateQuestionComment(APIView):
 			return Response({'user': serializer.data})
 		return Response(serializer.errors,status=status.HTTP_404_NOT_FOUND)
 
-
+class MatrixOne(APIView):
+	def get(self,req):
+		data = []
+		for q in questions:
+			print(questions[q])
+			serializer = EntranceQuestionSerializer(data=questions[q])
+			if serializer.is_valid():
+				serializer.save()
+		return Response(serializer.errors)
+class MatrixAll(APIView):
+	def get(self,req):
+		data = EntranceQuestion.objects.all()
+		serializer = EntranceQuestionSerializer(data,many=True)
+		return Response(serializer.data)
 
 class ListQuestionComment(APIView):
-    def get(self,req):
-        questionComment = QuestionComment.objects.all()
-        serializer = QuestionCommentSerializer(questionComment,many=True)
-        return Response(serializer.data)
+	def get(self,req):
+		questionComment = QuestionComment.objects.all()
+		serializer = QuestionCommentSerializer(questionComment,many=True)
+		return Response(serializer.data)
 
 class QuestionComments(APIView):
 	def get(self,req,pk):
@@ -302,4 +315,189 @@ class QuestionComments(APIView):
 			return Response({
 				"msg":'QuestionComment does not exist'
 			})
+class CreateClassRoom(APIView):
+	def get(self,req):
+		data = ClassRoom.objects.all()
+		serializer = ClassRoomSerializer(data,many=True)
+		return Response(serializer.data)
+	def post(self,req):
+		serializer = ClassRoomSerializer(data=req.data)
+		if serializer.is_valid():
+			serializer.save()
+			Response(serializer.data)
+		return Response(serializer.errors)
+	
+class JoinClassRoom(APIView):
+	def get(self,req):
+		data = ClassRoomStudent.objects.all()
+		serializer = ClassRoomStudentSerializer(data,many=True)
+		return Response(serializer.data)
+	def post(self,req):
+		print(req.data)
+		user = Student.objects.get(email=req.data['student'])
+		req.data['student']= user.id
+		serializer = ClassRoomStudentSerializer(data=req.data)
+		if serializer.is_valid():
+			serializer.save()
+			Response(serializer.data)
+		print(serializer.errors)
+		return Response(serializer.errors)
+	
+class GetClassRoom(APIView):
+	def get(self,req,pk):
+		print(pk)
+
+		try:
+			data = ClassRoomStudent.objects.filter(student=pk)
+			classRoom = []
+			for room in data:
+				clroom = ClassRoom.objects.get(id=room.classroom)
+				serializer = ClassRoomSerializer(clroom)
+				creator = Student.objects.get(id=clroom.teacher)
+				creatorSerializer = StudentSerializer(creator)
+				classRoom.append({"classrrom":serializer.data,"creator":creatorSerializer.data})
+			return Response(classRoom)
+		except:
+			return Response([{"isExist":False}])
+	# def post(self,req):
+	# 	serializer = ClassRoomStudentSerializer(data=req.data)
+	# 	if serializer.is_valid():
+	# 		serializer.save()
+	# 		Response(serializer.data)
+	# 	return Response(serializer.errors)
+class GetMyClassRoom(APIView):
+	def get(self,req,pk):
+		print(pk)
+
+		try:
+			clroom = ClassRoom.objects.filter(teacher=pk)
+			print(clroom)
+			serializer = ClassRoomSerializer(clroom,many=True)
+			
+			return Response(serializer.data)
+		except:
+			return Response({"isExist":False})
+
+class PostClassRoom(APIView):
+	def get(self,req,pk):
+		try:
+			data = ClassRoomPost.objects.filter(classroom=pk)
+			serializer = ClassRoomPostSerializer(data,many=True)
+			return Response(serializer.data)
+		except:
+			return Response({"isExist":False})
+	def post(self,req,pk):
+		serializer = ClassRoomPostSerializer(data=req.data)
+		if serializer.is_valid():
+			serializer.save()
+			Response(serializer.data)
+		return Response(serializer.errors)
+
+class MyMessage(APIView):
+	def get(self,req,pk):
+		user = Student.objects.get(id=pk)
+		lists = []
+		lists = user.startedchat if user.startedchat  != None else []
+		print(lists)
+		msgs = Message.objects.filter(roomid__in=lists)
+		msgs = msgs.order_by('-updated')
+		gotFriend = []
+		data=[]
+		for fr in msgs:
+			ids = fr.sender if fr.sender==pk else fr.sender
+			if ids not in gotFriend:
+				user = Student.objects.get(id=ids)
+				userser = StudentSerializer(user)
+				messageser = MessageSerializer(fr)
+				data.append({'user':userser.data,'msg':messageser.data})
+				gotFriend.append(ids)
+		print(data)
+		serializer = MessageSerializer(msgs,many=True)
 		
+		return Response(data)
+	def post(self,req,pk):
+		user = Student.objects.get(id=pk)
+		data = req.data['data']
+		if user.startedchat == None or data[0] not in user.startedchat:
+			user.startedchat = user.startedchat + [data[0]] if user.startedchat  != None else  [data[0]]
+		user.save()
+		user2 = Student.objects.get(id=data[1])
+		if user2.startedchat == None or data[0] not in user2.startedchat:
+			user2.startedchat = user2.startedchat + [data[0]] if user2.startedchat  != None else  [data[0]]
+		user2.save()
+		serializer = StudentSerializer(user2)
+		return Response(serializer.data)
+
+class MyFriend(APIView):
+	def get(self,req,pk):
+		user = Student.objects.get(id=pk)
+		lists = []
+		lists = user.friends if user.friends  != None else []
+		print(lists)
+		msgs = Student.objects.filter(id__in=lists)
+		serializer = StudentSerializer(msgs,many=True)
+		
+		return Response(serializer.data)
+	def post(self,req,pk):
+		user = Student.objects.get(id=pk)
+		data = req.data['data']
+		if user.friends == None or data[0] not in user.friends:
+			user.friends = user.friends + [data[0]] if user.friends  != None else  [data[0]]
+		user.save()
+		user2 = Student.objects.get(id=data[0])
+		if user2.friends == None or pk not in user2.friends:
+			user2.friends = user2.friends + [pk] if user2.friends  != None else  [pk]
+		user2.save()
+		serializer = StudentSerializer(user2)
+		return Response(serializer.data)
+		# return Response(serializer.errors)
+
+
+class MessageGet(APIView):
+	def get(self,req,pk):
+		data = Message.objects.filter(roomid = pk)
+		serializer = MessageSerializer(data,many=True)
+		return Response(serializer.data)
+	def post(self,req,pk):
+		serializer = MessageSerializer(data=req.data)
+		if serializer.is_valid():
+			serializer.save()
+			Response(serializer.data)
+		return Response(serializer.errors)
+
+class Group(APIView):
+	def get(self,req,pk):
+		groups = Groups.objects.all()
+		serailizer = GroupsSerializer(groups,many=True)
+		return Response(serailizer.data)
+	def post(self,req,pk):
+		serializer = GroupsSerializer(data=req.data)
+		if serializer.is_valid():
+			serializer.save()
+			Response(serializer.data)
+		return Response(serializer.errors)
+	def put(self,req,pk):
+		group = Groups.objects.get(id=pk)
+		serializer = GroupsSerializer(instance=group,data=req.data)
+		if serializer.is_valid():
+			serializer.save()
+			return Response(serializer.data)
+		return Response(serializer.errors)
+# models.py
+# from django.db import models
+
+# class Book(models.Model):
+#     title = models.CharField(max_length=200)
+#     author = models.CharField(max_length=100)
+#     published_date = models.DateField()
+
+# # views.py or wherever you want to perform the query
+# from datetime import date
+# from .models import Book
+
+# # Retrieve books published after the year 2000
+# recent_books = Book.objects.filter(published_date__year__gt=2000)
+
+# # Print the titles of the retrieved books
+# for book in recent_books:
+#     print(book.title)
