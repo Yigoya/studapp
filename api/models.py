@@ -12,17 +12,20 @@ class User(AbstractUser):
     
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
+    
 
 class Student(models.Model):
-    name = models.CharField(max_length=250,null=True)
-    email = models.EmailField(unique=True,null=True)
-    password = models.CharField(max_length=250,null=True)
+    name = models.CharField(max_length=250,unique=True)
+    username = models.CharField(max_length=250,unique=True)
+    email = models.EmailField(unique=True)
+    password = models.CharField(max_length=250)
     bio = models.TextField(null=True)
-    avatar = models.ImageField(null=True,upload_to='profile/')
+    avatar = models.ImageField(null=True,upload_to='media/profile/')
     grade = models.CharField(max_length=20, null=True)
     schoolname = models.TextField(null=True)
     startedchat = models.JSONField(null=True)
     friends = models.JSONField(null=True)
+    isOnline = models.BooleanField(default = False)
     def set_password(self,raw_password):
         self.password = make_password(raw_password)
     
@@ -75,22 +78,23 @@ class ClassRoomPost(models.Model):
     author = models.IntegerField()
     tasktype = models.TextField()
     title = models.TextField()
-    file = models.FileField(null=True,upload_to='file/')
-    image = models.ImageField(null=True,upload_to='image/')
+    file = models.FileField(null=True,upload_to='media/file/')
+    image = models.ImageField(null=True,upload_to='media/image/')
     text = models.TextField()
 
 class QuestionComment(models.Model):
     question = models.IntegerField()
     author = models.IntegerField()
     text = models.TextField()
-    file = models.FileField(null=True,upload_to='file/')
-    image = models.ImageField(null=True,upload_to='image/')
+    file = models.FileField(null=True,upload_to='media/file/')
+    image = models.ImageField(null=True,upload_to='media/image/')
 
 class Message(models.Model):
     sender = models.IntegerField()
     receiver = models.IntegerField()
     roomid=models.CharField(max_length=250)
     body = models.TextField()
+    isSeen = models.BooleanField(default=False)
     updated = models.DateTimeField(auto_now=True)
     created = models.DateTimeField(auto_now_add=True)
     

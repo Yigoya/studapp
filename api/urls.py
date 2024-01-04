@@ -11,10 +11,11 @@ urlpatterns = [
     path('createstudent/',views.CreateStudent.as_view()),
     path('loginstudent/',views.LoginStudent.as_view()),
     path('student/<int:pk>',views.Students.as_view()),    
-    path('listteacher/',views.ListTeacher.as_view()),
+    path('getusername',views.GetUsername.as_view()),    
+    # path('getstudent/<int:pk>',views.GetStudent.as_view()),
     path('createteacher/',views.CreateTeacher.as_view()),
     path('loginteacher/',views.LoginTeacher.as_view()),
-    path('teacher/<int:pk>',views.Teachers.as_view()),
+    path('getstudent/<int:pk>',views.GetStudent.as_view()),
     path('listentrance/',views.ListEntranceQuestion.as_view()),
     path('createentrance/',views.CreateEntranceQuestion.as_view()),
     path('entrance/<int:pk>',views.EntranceQuestions.as_view()),
@@ -33,5 +34,6 @@ urlpatterns = [
     path('mymessage/<int:pk>',views.MyMessage.as_view()),
     path('group/<int:pk>',views.Group.as_view()),
     path('friend/<int:pk>',views.MyFriend.as_view()),
+    path('online/<int:pk>',views.Online.as_view()),
     
 ]

@@ -77,6 +77,21 @@ class ListStudent(APIView):
 		student = Student.objects.all()
 		serializer = StudentSerializer(student,many=True)
 		return Response(serializer.data)
+	
+class GetUsername(APIView):
+	student = None
+	def get(self,req):
+		print(req.GET.get('name'))
+		try:
+			student = Student.objects.get(username=req.GET.get('name'))
+			# serializer = StudentSerializer(student,many=False)
+			return Response({
+				"isUsed":True
+			})
+		except:
+			return Response({
+				"isUsed":False
+			})
 
 class Students(APIView):
 	student = None
@@ -138,18 +153,18 @@ class LoginTeacher(APIView):
 		return Response(serializer.data)
 
 
-class ListTeacher(APIView):
-	def get(self,req):
-		teacher = Teacher.objects.all()
-		serializer = TeacherSerializer(teacher,many=True)
-		return Response(serializer.data)
+# class GetStudent(APIView):
+# 	def get(self,req,pk):
+# 		user = Student.objects.get(id=pk)
+# 		serializer = StudentSerializer(user)
+# 		return Response(serializer.data)
 
-class Teachers(APIView):
+class GetStudent(APIView):
 	def get(self,req,pk):
 		try:
-			teacher = Teacher.objects.get(id=pk)
-			serializer = TeacherSerializer(teacher,many=False)
-		
+			user = Student.objects.get(id=pk)
+			serializer = StudentSerializer(user,many=False)
+			print(serializer.data)
 			return Response(serializer.data)
 		except:
 			return Response({
@@ -398,13 +413,14 @@ class MyMessage(APIView):
 		user = Student.objects.get(id=pk)
 		lists = []
 		lists = user.startedchat if user.startedchat  != None else []
-		print(lists)
+
 		msgs = Message.objects.filter(roomid__in=lists)
 		msgs = msgs.order_by('-updated')
 		gotFriend = []
 		data=[]
+		# print(MessageSerializer(msgs,many=True).data)
 		for fr in msgs:
-			ids = fr.sender if fr.sender==pk else fr.sender
+			ids = fr.sender if fr.sender !=pk else fr.receiver
 			if ids not in gotFriend:
 				user = Student.objects.get(id=ids)
 				userser = StudentSerializer(user)
@@ -413,7 +429,7 @@ class MyMessage(APIView):
 				gotFriend.append(ids)
 		print(data)
 		serializer = MessageSerializer(msgs,many=True)
-		
+		print(serializer.data)
 		return Response(data)
 	def post(self,req,pk):
 		user = Student.objects.get(id=pk)
@@ -441,14 +457,19 @@ class MyFriend(APIView):
 	def post(self,req,pk):
 		user = Student.objects.get(id=pk)
 		data = req.data['data']
+		print(data)
 		if user.friends == None or data[0] not in user.friends:
+			print(user.friends)
 			user.friends = user.friends + [data[0]] if user.friends  != None else  [data[0]]
-		user.save()
+			user.save()
 		user2 = Student.objects.get(id=data[0])
 		if user2.friends == None or pk not in user2.friends:
 			user2.friends = user2.friends + [pk] if user2.friends  != None else  [pk]
-		user2.save()
-		serializer = StudentSerializer(user2)
+			user2.save()
+		serializer = StudentSerializer(user)
+		serializer2 = StudentSerializer(user2)
+		print(serializer.data)
+		print(serializer2.data)
 		return Response(serializer.data)
 		# return Response(serializer.errors)
 
@@ -483,6 +504,22 @@ class Group(APIView):
 			serializer.save()
 			return Response(serializer.data)
 		return Response(serializer.errors)
+
+class Online(APIView):
+	def get(self,req,pk):
+		data = Student.objects.get(id=pk)
+		data.isOnline = not data.isOnline 
+		data.save()
+		serializer = StudentSerializer(data)
+		return Response(serializer.data)
+	
+	def post(self,req,pk):
+		data = Student.objects.get(id=pk)
+		data.isOnline = req.data['status'] 
+		data.save()
+		serializer = StudentSerializer(data)
+		return Response(serializer.data)
+
 # models.py
 # from django.db import models
 

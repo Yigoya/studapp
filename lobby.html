@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <h1>lets chat</h1>
+    <input type="text" name="message" id="room" />
+    <button id="roombtn"> create/join group</button>
+    <form id='form'>
+        <input type="text" name="message" />
+    </form>
+
+    <div id="messages">
+
+    </div>
+    <script type='text/javascript'>
+
+        let room = document.getElementById('room')
+        let roombtn = document.getElementById('roombtn')
+
+        roombtn.addEventListener('click', () => {
+            let rmname = room.value
+            console.log(rmname)
+            let url = `ws://192.168.231.17:8000/ws/server/${rmname}`
+            console.log(url)
+            const chatSocket = new WebSocket(url)
+
+            chatSocket.onmessage = function (e) {
+                let data = JSON.parse(e.data)
+                console.log('Data: ', data)
+
+                if (data.type === 'chat') {
+                    let messages = document.getElementById('messages')
+
+                    messages.insertAdjacentHTML('beforeend', `<div>
+                                        <p>${data.msg['body']}</p>
+                                    </div>`)
+                }
+            }
+
+            let form = document.getElementById('form')
+            form.addEventListener('submit', (e) => {
+                e.preventDefault()
+                let message = e.target.message.value
+                console.log(message)
+                chatSocket.send(JSON.stringify({
+                    'body': message,
+                    'sender': 4,
+                    'receiver': 13,
+                    'roomid': "413"
+                }))
+                form.reset()
+            })
+        })
+    </script>
+</body>
+
+</html>
