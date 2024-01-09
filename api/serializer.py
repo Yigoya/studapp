@@ -44,7 +44,12 @@ class MessageSerializer(serializers.ModelSerializer):
         model = Message
         fields = '__all__'
 
-class GroupsSerializer(serializers.ModelSerializer):
+class GroupChatSerializer(serializers.ModelSerializer):
     class Meta:
-        model=Groups
+        model=GroupChat
+        fields = '__all__'
+
+class GroupUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=GroupUser
         fields = '__all__'

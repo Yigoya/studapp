@@ -10,7 +10,24 @@ from rest_framework.authtoken.models import Token
 from rest_framework import status
 from rest_framework.views import APIView
 from .data import questions
-# Create your views here.
+from pyfcm import FCMNotification
+
+def send_notification(device_token, title, body):
+	api_key = "AAAAwprXviI:APA91bEXWyY8K1CxEpW4Z2z781bXJ_LDpKV9_f5MpncpxLMJhmJBOjD9aOVLnwm2ajhgGq7uHbBVK4jVTlGjMxL6A3GOuNAVHw5ZyiIrKftnu0eMjidqU2Zsh56MNwqIpEVXj-AZ66DM"
+	push_service = FCMNotification(api_key=api_key)
+
+	message = {
+		"registration_id": device_token,
+
+			"message_title": title,
+			"message_body": body,
+
+	}
+
+	result = push_service.notify_single_device(**message)
+	print(result)
+
+
 @api_view(['GET'])
 def getRoute(request):
 	user = User.objects.all()
@@ -68,12 +85,15 @@ class LoginStudent(APIView):
 		user = get_object_or_404(Student, email=req.data['email'])
 		if not user.check_password(req.data['password']):
 			return Response('check your email',status=status.HTTP_404_NOT_FOUND)
+		user.token = req.data['token']
+		user.save()
 		serializer = StudentSerializer(user)
 		return Response(serializer.data)
 
 
 class ListStudent(APIView):
 	def get(self,req):
+		send_notification('cFp7R6seSNuAql8TAOG5Lg:APA91bEfA3Pgf027q-lX_lFXIHRx9Z9pThKb-WkS7hLlWx3w0kQeb0yasL36zrsR4Z_NDPCW6CHl9oV0Rs-XP_e9nXaNLNJjVhE1v-OTuTbAeRG9cI3_6M5ees-_lW1bW_b4mdLjNG5W','EduFlex','the myghty')
 		student = Student.objects.all()
 		serializer = StudentSerializer(student,many=True)
 		return Response(serializer.data)
@@ -106,7 +126,7 @@ class Students(APIView):
 	def get(self,req,pk):
 		print(req.GET.get('email'))
 		try:
-			student = Student.objects.get(email=req.GET.get('email'))
+			student = Student.objects.get(username=req.GET.get('name'))
 			serializer = StudentSerializer(student,many=False)
 		
 			return Response(serializer.data)
@@ -130,7 +150,39 @@ class Students(APIView):
 			return Response({
 				"msg":'Student does not exist'
 			})
+
+class SetProfile(APIView):
+	student = None
+
+	def get(self,req,pk):
+		print(req.GET.get('email'))
+		try:
+			student = Student.objects.get(username=req.GET.get('name'))
+			serializer = StudentSerializer(student,many=False)
 		
+			return Response(serializer.data)
+		except:
+			return Response({
+				"msg":'Student does not exist'
+			})
+		# self.get_student_by_id(pk)
+		# serializer = StudentSerializer(self.student,many=False)
+		
+		# return Response(serializer.data)
+	def put(self,req,pk):
+		try:
+			student = Student.objects.get(id=pk)
+			student.avatar = req.data['avatar']
+			student.save()
+			# serializer = StudentSerializer(instance=student,data=req.data)
+			# if serializer.is_valid():
+			# 	serializer.save()
+			return Response({'isSuccess':True})
+			# return Response(serializer.errors,status=status.HTTP_403_FORBIDDEN)
+		except:
+			return Response({'isSuccess':False})
+
+
 class CreateTeacher(APIView):
 	def post(self,req):
 		
@@ -341,20 +393,34 @@ class CreateClassRoom(APIView):
 			serializer.save()
 			Response(serializer.data)
 		return Response(serializer.errors)
+
+class ClassRoomBycode(APIView):
+	def get(self,req):
+		try:
+			data = ClassRoom.objects.get(id = req.GET.get('id'))
+			serializer = ClassRoomSerializer(data)
+			return Response(serializer.data)
+		except:
+			return Response({'isExist':False})
 	
+
 class JoinClassRoom(APIView):
 	def get(self,req):
 		data = ClassRoomStudent.objects.all()
 		serializer = ClassRoomStudentSerializer(data,many=True)
 		return Response(serializer.data)
 	def post(self,req):
-		print(req.data)
-		user = Student.objects.get(email=req.data['student'])
-		req.data['student']= user.id
-		serializer = ClassRoomStudentSerializer(data=req.data)
-		if serializer.is_valid():
-			serializer.save()
-			Response(serializer.data)
+		try:
+			data = ClassRoom.objects.get(id = req.data['classroom'])
+			serializer = ClassRoomSerializer(data)
+			
+			serializer = ClassRoomStudentSerializer(data=req.data)
+			if serializer.is_valid():
+				serializer.save()
+				Response(serializer.data)
+		except:
+			return Response({'isExist':False})
+		
 		print(serializer.errors)
 		return Response(serializer.errors)
 	
@@ -363,8 +429,17 @@ class GetClassRoom(APIView):
 		print(pk)
 
 		try:
-			data = ClassRoomStudent.objects.filter(student=pk)
 			classRoom = []
+			clroom = ClassRoom.objects.filter(teacher=pk)
+			# serializer = ClassRoomSerializer(clroom,many=True)
+			for room in clroom:
+				# clroom = ClassRoom.objects.get(id=room.classroom)
+				serializer = ClassRoomSerializer(room)
+				creator = Student.objects.get(id=room.teacher)
+				creatorSerializer = StudentSerializer(creator)
+				classRoom.append({"classrrom":serializer.data,"creator":creatorSerializer.data})
+			data = ClassRoomStudent.objects.filter(student=pk)
+			
 			for room in data:
 				clroom = ClassRoom.objects.get(id=room.classroom)
 				serializer = ClassRoomSerializer(clroom)
@@ -380,12 +455,12 @@ class GetClassRoom(APIView):
 	# 		serializer.save()
 	# 		Response(serializer.data)
 	# 	return Response(serializer.errors)
-class GetMyClassRoom(APIView):
+class GetGroup(APIView):
 	def get(self,req,pk):
 		print(pk)
 
 		try:
-			clroom = ClassRoom.objects.filter(teacher=pk)
+			clroom = GroupChat.objects.filter(teacher=pk)
 			print(clroom)
 			serializer = ClassRoomSerializer(clroom,many=True)
 			
@@ -397,8 +472,13 @@ class PostClassRoom(APIView):
 	def get(self,req,pk):
 		try:
 			data = ClassRoomPost.objects.filter(classroom=pk)
-			serializer = ClassRoomPostSerializer(data,many=True)
-			return Response(serializer.data)
+			res = []
+			for post in data:
+				user = Student.objects.get(id=post.author)
+				userserializer = StudentSerializer(user)
+				serializer = ClassRoomPostSerializer(post)
+				res.append({'post':serializer.data,'user':userserializer.data})
+			return Response(res)
 		except:
 			return Response({"isExist":False})
 	def post(self,req,pk):
@@ -427,9 +507,9 @@ class MyMessage(APIView):
 				messageser = MessageSerializer(fr)
 				data.append({'user':userser.data,'msg':messageser.data})
 				gotFriend.append(ids)
-		print(data)
+
 		serializer = MessageSerializer(msgs,many=True)
-		print(serializer.data)
+
 		return Response(data)
 	def post(self,req,pk):
 		user = Student.objects.get(id=pk)
@@ -449,7 +529,7 @@ class MyFriend(APIView):
 		user = Student.objects.get(id=pk)
 		lists = []
 		lists = user.friends if user.friends  != None else []
-		print(lists)
+
 		msgs = Student.objects.filter(id__in=lists)
 		serializer = StudentSerializer(msgs,many=True)
 		
@@ -457,7 +537,6 @@ class MyFriend(APIView):
 	def post(self,req,pk):
 		user = Student.objects.get(id=pk)
 		data = req.data['data']
-		print(data)
 		if user.friends == None or data[0] not in user.friends:
 			print(user.friends)
 			user.friends = user.friends + [data[0]] if user.friends  != None else  [data[0]]
@@ -468,8 +547,7 @@ class MyFriend(APIView):
 			user2.save()
 		serializer = StudentSerializer(user)
 		serializer2 = StudentSerializer(user2)
-		print(serializer.data)
-		print(serializer2.data)
+
 		return Response(serializer.data)
 		# return Response(serializer.errors)
 
@@ -486,20 +564,82 @@ class MessageGet(APIView):
 			Response(serializer.data)
 		return Response(serializer.errors)
 
-class Group(APIView):
+class GroupMessageGet(APIView):
 	def get(self,req,pk):
-		groups = Groups.objects.all()
-		serailizer = GroupsSerializer(groups,many=True)
-		return Response(serailizer.data)
+		res=[]
+		data = Message.objects.filter(roomid = pk)
+		for ds in data:
+			user = Student.objects.get(id=ds.sender)
+			seruser = StudentSerializer(user)
+			serializer = MessageSerializer(ds)
+			res.append({'user':seruser.data,'msg':serializer.data})
+		
+		return Response(res)
 	def post(self,req,pk):
-		serializer = GroupsSerializer(data=req.data)
+		serializer = MessageSerializer(data=req.data)
 		if serializer.is_valid():
 			serializer.save()
 			Response(serializer.data)
 		return Response(serializer.errors)
+
+class GroupMessageGet(APIView):
+	def get(self,req,pk):
+		data = Message.objects.filter(roomid = pk)
+		res=[]
+		for ds in data:
+			user = Student.objects.get(id=ds.sender)
+			userserializer = StudentSerializer(user)
+			serializer = MessageSerializer(ds)
+			res.append({'msg':serializer.data,'user':userserializer.data})
+		return Response(res)
+	def post(self,req,pk):
+		serializer = MessageSerializer(data=req.data)
+		if serializer.is_valid():
+			serializer.save()
+			Response(serializer.data)
+		return Response(serializer.errors)
+
+
+class Group(APIView):
+	def get(self,req,pk):
+		res=[]
+		usergroup = GroupUser.objects.filter(user=pk)
+		for gr in usergroup:
+			group = GroupChat.objects.get(id=gr.group)
+			serailizer = GroupChatSerializer(group)
+			msg = Message.objects.filter(roomid=group.idname)
+			
+			hasmsg = len(msg)>0 
+			if hasmsg:
+				msg = msg[len(msg)-1]
+				msgserializer = MessageSerializer(msg) 
+				res.append({'group':serailizer.data,'msg':msgserializer.data})	
+			else:	
+				res.append({'group':serailizer.data,'msg':0})		
+		return Response(res)
+	def post(self,req,pk):
+		serializer = GroupChatSerializer(data=req.data)
+		if serializer.is_valid():
+			serializer.save()
+		else:
+			return Response(serializer.errors)
+		print('1 1 1 1')
+		group = GroupChat.objects.get(idname=req.data['idname'])
+		data = {
+			'group':group.id,
+			'user':pk
+		}
+		GUserialiser = GroupUserSerializer(data=data)
+		if GUserialiser.is_valid():
+			GUserialiser.save()
+		else:
+			Response(GUserialiser.errors)
+		print('1 1 1 1')
+		
+		Response(serializer.data)
 	def put(self,req,pk):
-		group = Groups.objects.get(id=pk)
-		serializer = GroupsSerializer(instance=group,data=req.data)
+		group = GroupChat.objects.get(id=pk)
+		serializer = GroupChatSerializer(instance=group,data=req.data)
 		if serializer.is_valid():
 			serializer.save()
 			return Response(serializer.data)
@@ -519,6 +659,83 @@ class Online(APIView):
 		data.save()
 		serializer = StudentSerializer(data)
 		return Response(serializer.data)
+
+class JoinGroup(APIView):
+	def get(self,req):
+		data = GroupChat.objects.all()
+		serializer = GroupChatSerializer(data,many=True)
+		return Response(serializer.data)
+	def post(self,req):
+		
+		try:
+			data = GroupChat.objects.get(idname = req.data['group'])
+
+			req.data['group'] = data.id
+			groups = GroupUser.objects.filter(group = req.data['group'])
+			for gr in groups:
+				if gr.user == req.data['user']:
+					return Response({'isIt':9})
+			
+		except:
+			return Response({'isExist':False})
+		
+		serializer = GroupUserSerializer(data=req.data)
+			
+		if serializer.is_valid():
+			serializer.save()
+			Response(serializer.data)
+		return Response(serializer.errors)
+	
+
+class ClassRoomSeen(APIView):
+	def get(self,req,pk):
+		data = ClassRoomPost.objects.get(id=pk)
+		data.isSeen = data.isSeen + [int(req.GET.get('id'))] 
+		data.save()
+		serializer = ClassRoomPostSerializer(data)
+		return Response(serializer.data)
+
+class ChatSeen(APIView):
+	def get(self,req,pk):
+		print(req.GET.get('id'))
+		res = []
+		data = Message.objects.filter(roomid=pk)
+		for ms in data:
+			if not ms.isSeen and ms.receiver == int(req.GET.get('id')):
+				res.append(ms.id)
+
+		return Response(res)	
+	def post(self,req,pk):
+		data = Message.objects.get(id=pk)
+		if int(req.GET.get('id')) == data.receiver:
+			data.isSeen = True
+			data.save()
+		serializer = MessageSerializer(data)
+		return Response(serializer.data)	
+
+class Notification(APIView):
+	def get(self,req,pk):
+		data = ClassRoomStudent.objects.filter(student=pk)
+		crpost = []
+		for cr in data:
+			post = ClassRoomPost.objects.filter(classroom=cr.classroom)
+			for ps in post:
+				if pk not in ps.isSeen:
+					classroom = ClassRoom.objects.get(id = ps.classroom)
+					serializer = ClassRoomSerializer(classroom)
+					user = Student.objects.get(id=ps.author)
+					userserializer = StudentSerializer(user)
+					postserializer = ClassRoomPostSerializer(ps)
+					crpost.append({'post':{'classroom':serializer.data,'post':postserializer.data,'user':userserializer.data}})
+		chat = Message.objects.filter(receiver=pk)
+		for ch in chat:
+			if not ch.isSeen:
+				sender = Student.objects.get(id=ch.sender)
+				senderSer = StudentSerializer(sender)
+				serializer = MessageSerializer(ch)
+				crpost.append({'chat':{'chat':serializer.data,'user':senderSer.data}})
+		return Response(crpost)
+
 
 # models.py
 # from django.db import models

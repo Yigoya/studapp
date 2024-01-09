@@ -20,7 +20,8 @@ application = ProtocolTypeRouter({
     'http':get_asgi_application(),
     'websocket':AuthMiddlewareStack(
         URLRouter([
-            path('ws/server/<str:rm>',consumer.ChatConsumer.as_asgi())
+            path('ws/server/<str:rm>',consumer.ChatConsumer.as_asgi()),
+            path('ws/server/group/<str:rm>',consumer.GroupConsumer.as_asgi()),
         ])
     )
 })
